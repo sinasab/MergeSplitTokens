@@ -33,9 +33,10 @@ contract MergeSplitERC20Broker is MergeChecker {
     }
 
     function powRedeemable() public view returns (bool) {
-        return
-            !merged &&
-            (block.timestamp > UPPER_BOUND_TIMESTAMP || block.chainid != 1);
+        bool redeemableViaTimeout = block.timestamp > UPPER_BOUND_TIMESTAMP;
+        bool redeemableViaDetectedFork = block.chainid != 1;
+        bool redeemable = redeemableViaTimeout || redeemableViaDetectedFork;
+        return !merged && redeemable;
     }
 
     // TODO(sina) should this be incentivized?

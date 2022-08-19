@@ -30,6 +30,8 @@ contract MergeSplitERC20BrokerTest is Test {
     function setUp() public {
         mockERC20 = new MockERC20(NAME, SYMBOL, DECIMALS);
         broker = new MergeSplitERC20Broker();
+        // TODO(sina) does this do anything?
+        vm.chainId(1);
     }
 
     function testPosRedeemable(bool set) public {
@@ -50,19 +52,24 @@ contract MergeSplitERC20BrokerTest is Test {
         assertEq(broker.powRedeemable(), true);
     }
 
-    function testPowRedeemableFalse() public {
+    function testPowRedeemableFalseWhenMerged() public {
         // False when merged
         setPowRedeemable(true);
         getMergedStorageSlot().checked_write(true);
         assertEq(broker.powRedeemable(), false);
-        // Or blocktime is lower than the boundary timestamp
-        getMergedStorageSlot().checked_write(false);
+    }
+
+    function testPowRedeemableFalseWhenUnderTs() public {
+        setPowRedeemable(true);
+        vm.chainId(1);
         vm.warp(broker.UPPER_BOUND_TIMESTAMP());
+        console2.log(broker.powRedeemable());
         assertEq(broker.powRedeemable(), false);
     }
 
     function testPowRedeemableFalseFuzzed(uint256 ts) public {
         setPowRedeemable(true);
+        vm.chainId(1);
         vm.assume(ts <= broker.UPPER_BOUND_TIMESTAMP());
         vm.warp(ts);
         assertEq(broker.powRedeemable(), false);
@@ -86,7 +93,7 @@ contract MergeSplitERC20BrokerTest is Test {
         setPosRedeemable(false);
         setPowRedeemable(false);
 
-        // merged shouldn't be set here, since difficulty isn't high enough
+        // merged shouldn't be set here, since difficulty isn't high enough.
         vm.difficulty(1);
         broker.activateMerge();
         assertEq(broker.merged(), false);
@@ -280,6 +287,8 @@ contract MergeSplitERC20BrokerTest is Test {
     function setPowRedeemable(bool set) internal {
         if (set) {
             getMergedStorageSlot().checked_write(false);
+        } else {
+            vm.chainId(1);
         }
         uint256 offset = set ? 1 : 0;
         vm.warp(broker.UPPER_BOUND_TIMESTAMP() + offset);
