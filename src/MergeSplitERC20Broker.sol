@@ -54,30 +54,32 @@ contract MergeSplitERC20Broker is MergeChecker {
         }
         ERC20 token = ERC20(underlyingToken);
         token.safeTransferFrom(msg.sender, address(this), amount);
-        if (posAddrs[underlyingToken] == address(0)) {
+        address pos = posAddrs[underlyingToken];
+        address pow;
+        if (pos == address(0)) {
             bytes32 salt = keccak256(abi.encodePacked(underlyingToken));
-            posAddrs[underlyingToken] = address(
+            pos = address(
                 new ERC20Ownable{salt: salt}(
                     string.concat(POS_PREFIX, token.name()),
                     string.concat(POS_PREFIX, token.symbol()),
                     token.decimals()
                 )
             );
-            powAddrs[underlyingToken] = address(
+            pow = address(
                 new ERC20Ownable{salt: salt}(
                     string.concat(POW_PREFIX, token.name()),
                     string.concat(POW_PREFIX, token.symbol()),
                     token.decimals()
                 )
             );
-            emit NewSplit(
-                underlyingToken,
-                posAddrs[underlyingToken],
-                powAddrs[underlyingToken]
-            );
+            posAddrs[underlyingToken] = pos;
+            powAddrs[underlyingToken] = pow;
+            emit NewSplit(underlyingToken, pos, pow);
+        } else {
+            pow = powAddrs[underlyingToken];
         }
-        ERC20Ownable(powAddrs[underlyingToken]).mint(msg.sender, amount);
-        ERC20Ownable(posAddrs[underlyingToken]).mint(msg.sender, amount);
+        ERC20Ownable(pos).mint(msg.sender, amount);
+        ERC20Ownable(pow).mint(msg.sender, amount);
     }
 
     function redeemPair(address underlyingToken, uint256 amount) external {
