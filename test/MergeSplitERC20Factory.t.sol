@@ -9,6 +9,7 @@ import "solmate/test/utils/mocks/MockERC20.sol";
 
 import "../src/ERC20Ownable.sol";
 import "../src/MergeSplitERC20Factory.sol";
+import "../src/ERC20Ownable.sol";
 
 contract MergeSplitERC20FactoryTest is Test {
     using stdStorage for StdStorage;
@@ -101,6 +102,9 @@ contract MergeSplitERC20FactoryTest is Test {
         // and predict newly deployed token addrs.
         assertEq(address(mergeSplitFactory.posAddrs(mockERC20)), address(0));
         assertEq(address(mergeSplitFactory.powAddrs(mockERC20)), address(0));
+
+        address logicContract = mergeSplitFactory.logicContract();
+
         assertEq(mockERC20.balanceOf(address(this)), 0);
         assertEq(mockERC20.balanceOf(address(mergeSplitFactory)), 0);
         bytes32 salt = keccak256(abi.encodePacked(address(mockERC20)));
@@ -108,8 +112,11 @@ contract MergeSplitERC20FactoryTest is Test {
             salt,
             keccak256(
                 abi.encodePacked(
-                    type(ERC20Ownable).creationCode,
-                    abi.encode("posTestToken", "posTKN", 18)
+                    type(Spawn).creationCode,
+                    abi.encode(
+                        logicContract,
+                        abi.encodeWithSelector(ERC20Ownable.init.selector,"posTestToken", "posTKN", 18)
+                    )
                 )
             ),
             address(mergeSplitFactory)
@@ -118,8 +125,11 @@ contract MergeSplitERC20FactoryTest is Test {
             salt,
             keccak256(
                 abi.encodePacked(
-                    type(ERC20Ownable).creationCode,
-                    abi.encode("powTestToken", "powTKN", 18)
+                    type(Spawn).creationCode,
+                    abi.encode(
+                        logicContract,
+                        abi.encodeWithSelector(ERC20Ownable.init.selector,"powTestToken", "powTKN", 18)
+                    )
                 )
             ),
             address(mergeSplitFactory)
@@ -157,6 +167,9 @@ contract MergeSplitERC20FactoryTest is Test {
     {
         // Prepare.
         vm.assume(amt1 <= type(uint256).max - amt2);
+        vm.assume(amt2 > 0);
+        vm.assume(amt1 > 0);
+
         testMintSucceedsForNewUnderlying(amt1);
         address alice = address(0xABCD);
         mockERC20.mint(alice, amt2);
@@ -177,6 +190,7 @@ contract MergeSplitERC20FactoryTest is Test {
     function testRedeemPair(uint256 amt1, uint256 amt2) public {
         // Prepare.
         vm.assume(amt2 < amt1);
+        vm.assume(amt2 > 0);
         uint256 amtDiff = amt1 - amt2;
         testMintSucceedsForNewUnderlying(amt1);
 
@@ -222,6 +236,7 @@ contract MergeSplitERC20FactoryTest is Test {
     }
 
     function testRedeemPowFailsIfNotSettled(uint256 amt) public {
+        vm.assume(amt > 0);
         setPowRedeemable(false);
 
         vm.expectRevert(NotSettled.selector);
@@ -229,6 +244,7 @@ contract MergeSplitERC20FactoryTest is Test {
     }
 
     function testRedeemPow(uint256 amt) public {
+        vm.assume(amt > 0);
         testMintSucceedsForNewUnderlying(amt);
         setPowRedeemable(true);
 

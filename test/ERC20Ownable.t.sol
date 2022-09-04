@@ -23,6 +23,7 @@ contract ERC20OwnableTest is Test {
     // Test minting
     function testOwnerCanMint(address target, uint256 amount) public {
         vm.assume(target != address(this));
+        vm.assume(target != address(0));
         vm.assume(amount != 0);
 
         erc20Ownable.mint(target, amount);

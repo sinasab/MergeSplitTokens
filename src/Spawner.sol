@@ -8,14 +8,14 @@ import "./ERC20Ownable.sol";
 
 contract Spawner {
 
-    address private _logicContract;
+    address public logicContract;
 
     /**
      * @notice set the logic contract address
      * @param _addr address of the logic contract
      */
     function _setLogicContract(address _addr) internal {
-        _logicContract = _addr;
+        logicContract = _addr;
     }
 
     /**
@@ -30,7 +30,7 @@ contract Spawner {
         // calldata that will be supplied to the `DELEGATECALL` from the spawned contract 
         // to the logic contract during contract creation
         bytes memory initializationCalldata = abi.encodeWithSelector(
-            ERC20Ownable(_logicContract).init.selector,
+            ERC20Ownable(logicContract).init.selector,
             name,
             symbol,
             decimals
@@ -40,8 +40,8 @@ contract Spawner {
 
         // place the creation code and constructor args of the contract to spawn in memory
         bytes memory initCode = abi.encodePacked(
-            type(Spawner).creationCode,
-            abi.encode(_logicContract, initializationCalldata)
+            type(Spawn).creationCode,
+            abi.encode(logicContract, initializationCalldata)
         );
 
         // spawn the contract using `CREATE2`
