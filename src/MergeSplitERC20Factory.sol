@@ -5,11 +5,12 @@ import "solmate/tokens/ERC20.sol";
 import "solmate/utils/SafeTransferLib.sol";
 import "./ERC20Ownable.sol";
 import "./MergeChecker.sol";
+import "./Spawner.sol";
 
 error AlreadySettled();
 error NotSettled();
 
-contract MergeSplitERC20Factory is MergeChecker {
+contract MergeSplitERC20Factory is MergeChecker, Spawner {
     using SafeTransferLib for ERC20;
 
     // Dec 15 2022 midnight GMT, converted to unix timestamp.
@@ -25,6 +26,13 @@ contract MergeSplitERC20Factory is MergeChecker {
         ERC20Ownable posToken,
         ERC20Ownable powToken
     );
+
+    constructor() {
+        ERC20Ownable impl = new ERC20Ownable();
+        impl.init("impl", "impl", 18);
+
+        _setLogicContract(address(impl));
+    }
 
     function posRedeemable() public view returns (bool) {
         return getIsMerged();
@@ -45,17 +53,20 @@ contract MergeSplitERC20Factory is MergeChecker {
         ERC20Ownable pos = posAddrs[underlyingToken];
         ERC20Ownable pow;
         if (address(pos) == address(0)) {
-            bytes32 salt = keccak256(abi.encodePacked(underlyingToken));
-            pos = new ERC20Ownable{salt: salt}(
-                string.concat(POS_PREFIX, underlyingToken.name()),
-                string.concat(POS_PREFIX, underlyingToken.symbol()),
+            string memory name = underlyingToken.name();
+            string memory symbol = underlyingToken.symbol();
+            pos = ERC20Ownable(_cloneMergeSplitToken(
+                address(underlyingToken),
+                string.concat(POS_PREFIX, name),
+                string.concat(POS_PREFIX, symbol),
                 underlyingToken.decimals()
-            );
-            pow = new ERC20Ownable{salt: salt}(
-                string.concat(POW_PREFIX, underlyingToken.name()),
-                string.concat(POW_PREFIX, underlyingToken.symbol()),
+            ));
+            pow = ERC20Ownable(_cloneMergeSplitToken(
+                address(underlyingToken),
+                string.concat(POW_PREFIX, name),
+                string.concat(POW_PREFIX, symbol),
                 underlyingToken.decimals()
-            );
+            ));
             posAddrs[underlyingToken] = pos;
             powAddrs[underlyingToken] = pow;
             emit NewSplit(underlyingToken, pos, pow);
