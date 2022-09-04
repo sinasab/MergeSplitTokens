@@ -12,7 +12,8 @@ contract ERC20OwnableTest is Test {
     ERC20Ownable public erc20Ownable;
 
     function setUp() public {
-        erc20Ownable = new ERC20Ownable(NAME, SYMBOL, DECIMALS);
+        erc20Ownable = new ERC20Ownable();
+        erc20Ownable.init(NAME, SYMBOL, DECIMALS);
     }
 
     function testInitialization() public {
@@ -22,6 +23,7 @@ contract ERC20OwnableTest is Test {
     // Test minting
     function testOwnerCanMint(address target, uint256 amount) public {
         vm.assume(target != address(this));
+        vm.assume(target != address(0));
         vm.assume(amount != 0);
 
         erc20Ownable.mint(target, amount);
@@ -36,7 +38,7 @@ contract ERC20OwnableTest is Test {
         vm.assume(amount != 0);
 
         vm.prank(nonOwner);
-        vm.expectRevert("UNAUTHORIZED");
+        vm.expectRevert("Ownable: caller is not the owner");
 
         erc20Ownable.mint(target, amount);
     }
@@ -63,7 +65,7 @@ contract ERC20OwnableTest is Test {
         vm.assume(amount != 0);
 
         vm.prank(nonOwner);
-        vm.expectRevert("UNAUTHORIZED");
+        vm.expectRevert("Ownable: caller is not the owner");
 
         erc20Ownable.burn(target, amount);
     }
