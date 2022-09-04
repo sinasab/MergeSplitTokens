@@ -167,8 +167,6 @@ contract MergeSplitERC20FactoryTest is Test {
     {
         // Prepare.
         vm.assume(amt1 <= type(uint256).max - amt2);
-        vm.assume(amt2 > 0);
-        vm.assume(amt1 > 0);
 
         testMintSucceedsForNewUnderlying(amt1);
         address alice = address(0xABCD);
@@ -190,7 +188,6 @@ contract MergeSplitERC20FactoryTest is Test {
     function testRedeemPair(uint256 amt1, uint256 amt2) public {
         // Prepare.
         vm.assume(amt2 < amt1);
-        vm.assume(amt2 > 0);
         uint256 amtDiff = amt1 - amt2;
         testMintSucceedsForNewUnderlying(amt1);
 
@@ -236,7 +233,6 @@ contract MergeSplitERC20FactoryTest is Test {
     }
 
     function testRedeemPowFailsIfNotSettled(uint256 amt) public {
-        vm.assume(amt > 0);
         setPowRedeemable(false);
 
         vm.expectRevert(NotSettled.selector);
@@ -244,7 +240,6 @@ contract MergeSplitERC20FactoryTest is Test {
     }
 
     function testRedeemPow(uint256 amt) public {
-        vm.assume(amt > 0);
         testMintSucceedsForNewUnderlying(amt);
         setPowRedeemable(true);
 
